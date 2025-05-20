@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird Adventure</title>
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <script>tailwind.config={theme:{extend:{colors:{primary:'#FF6B6B',secondary:'#4ECDC4'},borderRadius:{'none':'0px','sm':'4px',DEFAULT:'8px','md':'12px','lg':'16px','xl':'20px','2xl':'24px','3xl':'32px','full':'9999px','button':'8px'}}}}</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+    <style>
+        body {
+            font-family: 'Fredoka', sans-serif;
+            touch-action: manipulation;
+            overflow: hidden;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+        }
+        
+        .game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: linear-gradient(to bottom, #87CEEB, #E0F7FA);
+        }
+        
+        .bird {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background-image: url('https://cdn-icons-png.flaticon.com/512/2583/2583344.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            transform-origin: center;
+            z-index: 10;
+        }
+        
+        .obstacle {
+            position: absolute;
+            width: 60px;
+            background-color: #4ECDC4;
+            border-radius: 8px;
+            border: 3px solid #2A9D8F;
+        }
+        
+        .obstacle-top {
+            top: 0;
+        }
+        
+        .obstacle-bottom {
+            bottom: 80px;
+        }
+        
+        .cloud {
+            position: absolute;
+            background-image: url('https://cdn-icons-png.flaticon.com/512/414/414927.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            opacity: 0.8;
+            z-index: 1;
+        }
+        
+        .ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 80px;
+            background-color: #5c940d;
+            background-image: linear-gradient(to bottom, #5c940d, #4a7c0a);
+            z-index: 5;
+        }
+        
+        .score-container {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            text-align: center;
+        }
+        
+        .score {
+            font-size: 32px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .high-score {
+            font-size: 16px;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+        
+        .menu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 30;
+        }
+        
+        .game-title {
+            font-family: 'Pacifico', serif;
+            font-size: 36px;
+            color: white;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
+            margin-bottom: 30px;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            margin: 10px 0;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 200px;
+            text-align: center;
+        }
+        
+        .btn:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-primary {
+            background-color: #FF6B6B;
+            color: white;
+            box-shadow: 0 4px 0 #E63946;
+        }
+        
+        .btn-primary:active {
+            box-shadow: 0 2px 0 #E63946;
+        }
+        
+        .btn-secondary {
+            background-color: #4ECDC4;
+            color: white;
+            box-shadow: 0 4px 0 #2A9D8F;
+        }
+        
+        .btn-secondary:active {
+            box-shadow: 0 2px 0 #2A9D8F;
+        }
+        
+        .pause-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 20;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            backdrop-filter: blur(5px);
+            border: none;
+            cursor: pointer;
+        }
+        
+        .instructions {
+            color: white;
+            text-align: center;
+            margin: 20px 0;
+            max-width: 80%;
+            line-height: 1.5;
+            padding: 0 20px;
+        }
+        
+        .power-up {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-image: url('https://cdn-icons-png.flaticon.com/512/2583/2583434.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            z-index: 10;
+            animation: rotate 2s linear infinite;
+        }
+        
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 30;
+        }
+        
+        .settings-panel {
+            background-color: white;
+            border-radius: 16px;
+            padding: 20px;
+            width: 80%;
+            max-width: 300px;
+        }
+        
+        .settings-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 15px 0;
+        }
+        
+        .toggle {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background-color: #ccc;
+            border-radius: 34px;
+            cursor: pointer;
+        }
+        
+        .toggle.active {
+            background-color: #4ECDC4;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background-color: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+        
+        .toggle.active .toggle-slider {
+            transform: translateX(26px);
+        }
+        
+        .difficulty-selector {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .difficulty-btn {
+            padding: 5px 10px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .difficulty-btn.active {
+            background-color: #FF6B6B;
+            color: white;
+        }
+        
+        .character-selector {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+        }
+        
+        .character-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            overflow: hidden;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        
+        .character-option.active {
+            border-color: #FF6B6B;
+        }
+        
+        .character-option img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body class="bg-blue-100">
+    <div class="game-container" id="gameContainer">
+        <div class="bird" id="bird"></div>
+        <div class="ground" id="ground"></div>
+        
+        <div class="score-container">
+            <div class="score" id="score">0</div>
+            <div class="high-score" id="highScore">Meilleur: 0</div>
+        </div>
+        
+        <button class="pause-btn" id="pauseBtn">
+            <i class="ri-pause-line ri-lg text-white"></i>
+        </button>
+    </div>
+    
+    <div class="menu" id="startMenu">
+        <div class="game-title">Flappy Bird Adventure</div>
+        <p class="instructions">Tapez sur l'écran pour faire voler l'oiseau. Évitez les obstacles et collectez des étoiles pour gagner des points bonus!</p>
+        <button class="btn btn-primary" id="playBtn">JOUER</button>
+        <button class="btn btn-secondary" id="settingsBtn">PARAMÈTRES</button>
+    </div>
+    
+    <div class="menu" id="pauseMenu" style="display: none;">
+        <div class="game-title">Pause</div>
+        <button class="btn btn-primary" id="resumeBtn">REPRENDRE</button>
+        <button class="btn btn-secondary" id="restartBtn">RECOMMENCER</button>
+        <button class="btn btn-secondary" id="mainMenuBtn">MENU PRINCIPAL</button>
+    </div>
+    
+    <div class="game-over" id="gameOverMenu">
+        <div class="game-title">Game Over</div>
+        <div class="score" id="finalScore">Score: 0</div>
+        <div class="high-score" id="finalHighScore">Meilleur: 0</div>
+        <button class="btn btn-primary" id="playAgainBtn">REJOUER</button>
+        <button class="btn btn-secondary" id="gameOverMainMenuBtn">MENU PRINCIPAL</button>
+    </div>
+    
+    <div class="menu" id="settingsMenu" style="display: none;">
+        <div class="settings-panel">
+            <h2 class="text-xl font-bold text-center mb-4">Paramètres</h2>
+            
+            <div class="settings-option">
+                <span>Son</span>
+                <div class="toggle active" id="soundToggle">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+            
+            <div class="settings-option">
+                <span>Vibrations</span>
+                <div class="toggle active" id="vibrationToggle">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+            
+            <div class="settings-option">
+                <span>Difficulté</span>
+                <div class="difficulty-selector">
+                    <div class="difficulty-btn" data-difficulty="easy">Facile</div>
+                    <div class="difficulty-btn active" data-difficulty="medium">Moyen</div>
+                    <div class="difficulty-btn" data-difficulty="hard">Difficile</div>
+                </div>
+            </div>
+            
+            <div class="settings-option">
+                <span>Personnage</span>
+                <div class="character-selector">
+                    <div class="character-option active" data-character="bird1">
+                        <img src="https://cdn-icons-png.flaticon.com/512/2583/2583344.png" alt="Bird 1">
+                    </div>
+                    <div class="character-option" data-character="bird2">
+                        <img src="https://cdn-icons-png.flaticon.com/512/2583/2583393.png" alt="Bird 2">
+                    </div>
+                    <div class="character-option" data-character="bird3">
+                        <img src="https://cdn-icons-png.flaticon.com/512/2583/2583419.png" alt="Bird 3">
+                    </div>
+                </div>
+            </div>
+            
+            <button class="btn btn-primary w-full mt-4" id="saveSettingsBtn">SAUVEGARDER</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const gameContainer = document.getElementById('gameContainer');
+            const bird = document.getElementById('bird');
+            const scoreElement = document.getElementById('score');
+            const highScoreElement = document.getElementById('highScore');
+            const finalScoreElement = document.getElementById('finalScore');
+            const finalHighScoreElement = document.getElementById('finalHighScore');
+            const startMenu = document.getElementById('startMenu');
+            const pauseMenu = document.getElementById('pauseMenu');
+            const gameOverMenu = document.getElementById('gameOverMenu');
+            const settingsMenu = document.getElementById('settingsMenu');
+            const pauseBtn = document.getElementById('pauseBtn');
+            
+            // Game variables
+            let gameRunning = false;
+            let gameOver = false;
+            let score = 0;
+            let highScore = 0;
+            let birdY = 300;
+            let birdVelocity = 0;
+            let birdX = 100;
+            let gravity = 0.5;
+            let obstacles = [];
+            let powerUps = [];
+            let clouds = [];
+            let lastObstacleTime = 0;
+            let lastPowerUpTime = 0;
+            let obstacleInterval = 1500;
+            let powerUpInterval = 5000;
+            let gameSpeed = 3;
+            let soundEnabled = true;
+            let vibrationEnabled = true;
+            let difficulty = 'medium';
+            let currentCharacter = 'bird1';
+            let gameLoopId = null;
+            
+            // Set initial bird position
+            updateBirdPosition();
+            
+            // Create initial clouds
+            createInitialClouds();
+            
+            // Load high score from local storage
+            if (localStorage.getItem('flappyHighScore')) {
+                highScore = parseInt(localStorage.getItem('flappyHighScore'));
+                highScoreElement.textContent = `Meilleur: ${highScore}`;
+            }
+            
+            // Event listeners for buttons
+            document.getElementById('playBtn').addEventListener('click', startGame);
+            document.getElementById('resumeBtn').addEventListener('click', resumeGame);
+            document.getElementById('restartBtn').addEventListener('click', restartGame);
+            document.getElementById('mainMenuBtn').addEventListener('click', goToMainMenu);
+            document.getElementById('playAgainBtn').addEventListener('click', restartGame);
+            document.getElementById('gameOverMainMenuBtn').addEventListener('click', goToMainMenu);
+            document.getElementById('settingsBtn').addEventListener('click', openSettings);
+            document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
+            pauseBtn.addEventListener('click', pauseGame);
+            
+            // Event listeners for game play
+            gameContainer.addEventListener('click', birdJump);
+            gameContainer.addEventListener('touchstart', birdJump);
+            
+            // Settings event listeners
+            document.getElementById('soundToggle').addEventListener('click', toggleSound);
+            document.getElementById('vibrationToggle').addEventListener('click', toggleVibration);
+            
+            const difficultyBtns = document.querySelectorAll('.difficulty-btn');
+            difficultyBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    difficultyBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    difficulty = this.dataset.difficulty;
+                });
+            });
+            
+            const characterOptions = document.querySelectorAll('.character-option');
+            characterOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    characterOptions.forEach(o => o.classList.remove('active'));
+                    this.classList.add('active');
+                    currentCharacter = this.dataset.character;
+                    
+                    // Update bird appearance
+                    let birdImageUrl;
+                    if (currentCharacter === 'bird1') {
+                        birdImageUrl = 'https://cdn-icons-png.flaticon.com/512/2583/2583344.png';
+                    } else if (currentCharacter === 'bird2') {
+                        birdImageUrl = 'https://cdn-icons-png.flaticon.com/512/2583/2583393.png';
+                    } else {
+                        birdImageUrl = 'https://cdn-icons-png.flaticon.com/512/2583/2583419.png';
+                    }
+                    bird.style.backgroundImage = `url('${birdImageUrl}')`;
+                });
+            });
+            
+            function toggleSound() {
+                this.classList.toggle('active');
+                soundEnabled = this.classList.contains('active');
+            }
+            
+            function toggleVibration() {
+                this.classList.toggle('active');
+                vibrationEnabled = this.classList.contains('active');
+            }
+            
+            function openSettings() {
+                startMenu.style.display = 'none';
+                settingsMenu.style.display = 'flex';
+            }
+            
+            function saveSettings() {
+                settingsMenu.style.display = 'none';
+                startMenu.style.display = 'flex';
+            }
+            
+            function startGame() {
+                // Clear any existing game elements
+                clearGameElements();
+                
+                gameRunning = true;
+                gameOver = false;
+                score = 0;
+                scoreElement.textContent = score;
+                obstacles = [];
+                powerUps = [];
+                birdY = gameContainer.clientHeight / 2;
+                birdVelocity = 0;
+                lastObstacleTime = 0;
+                lastPowerUpTime = 0;
+                
+                // Apply difficulty settings
+                if (difficulty === 'easy') {
+                    gravity = 0.4;
+                    gameSpeed = 2.5;
+                    obstacleInterval = 1800;
+                } else if (difficulty === 'medium') {
+                    gravity = 0.5;
+                    gameSpeed = 3;
+                    obstacleInterval = 1500;
+                } else {
+                    gravity = 0.6;
+                    gameSpeed = 3.5;
+                    obstacleInterval = 1200;
+                }
+                
+                startMenu.style.display = 'none';
+                pauseBtn.style.display = 'flex';
+                gameOverMenu.style.display = 'none';
+                
+                updateBirdPosition();
+                gameLoopId = requestAnimationFrame(gameLoop);
+            }
+            
+            function clearGameElements() {
+                // Remove all obstacles
+                document.querySelectorAll('.obstacle').forEach(el => el.remove());
+                // Remove all power-ups
+                document.querySelectorAll('.power-up').forEach(el => el.remove());
+            }
+            
+            function pauseGame() {
+                if (gameRunning && !gameOver) {
+                    gameRunning = false;
+                    cancelAnimationFrame(gameLoopId);
+                    pauseMenu.style.display = 'flex';
+                }
+            }
+            
+            function resumeGame() {
+                if (!gameOver) {
+                    gameRunning = true;
+                    pauseMenu.style.display = 'none';
+                    gameLoopId = requestAnimationFrame(gameLoop);
+                }
+            }
+            
+            function restartGame() {
+                pauseMenu.style.display = 'none';
+                gameOverMenu.style.display = 'none';
+                startGame();
+            }
+            
+            function goToMainMenu() {
+                pauseMenu.style.display = 'none';
+                gameOverMenu.style.display = 'none';
+                startMenu.style.display = 'flex';
+                pauseBtn.style.display = 'none';
+                gameRunning = false;
+                gameOver = false;
+                cancelAnimationFrame(gameLoopId);
+            }
+            
+            function birdJump(e) {
+                if (e) e.preventDefault();
+                if (gameRunning && !gameOver) {
+                    birdVelocity = -8;
+                } else if (!gameRunning && !gameOver) {
+                    startGame();
+                }
+            }
+            
+            function gameLoop(timestamp) {
+                if (!gameRunning) return;
+                
+                // Update bird position
+                birdVelocity += gravity;
+                birdY += birdVelocity;
+                
+                // Create obstacles
+                if (!lastObstacleTime || timestamp - lastObstacleTime > obstacleInterval) {
+                    createObstacle();
+                    lastObstacleTime = timestamp;
+                }
+                
+                // Create power-ups
+                if (!lastPowerUpTime || timestamp - lastPowerUpTime > powerUpInterval) {
+                    createPowerUp();
+                    lastPowerUpTime = timestamp;
+                }
+                
+                // Move and check obstacles
+                moveObstacles();
+                
+                // Move and check power-ups
+                movePowerUps();
+                
+                // Move clouds
+                moveClouds();
+                
+                // Update visual elements
+                updateBirdPosition();
+                
+                // Check collisions
+                if (checkCollisions()) {
+                    endGame();
+                    return;
+                }
+                
+                // Continue game loop
+                gameLoopId = requestAnimationFrame(gameLoop);
+            }
+            
+            function updateBirdPosition() {
+                // Keep bird within game boundaries
+                const maxHeight = gameContainer.clientHeight - 80 - bird.offsetHeight;
+                if (birdY < 0) birdY = 0;
+                if (birdY > maxHeight) {
+                    birdY = maxHeight;
+                    if (gameRunning) endGame();
+                }
+                
+                // Update bird position and rotation
+                bird.style.top = `${birdY}px`;
+                bird.style.left = `${birdX}px`;
+                
+                // Rotate bird based on velocity
+                let rotation = birdVelocity * 2;
+                if (rotation > 30) rotation = 30;
+                if (rotation < -30) rotation = -30;
+                bird.style.transform = `rotate(${rotation}deg)`;
+            }
+            
+            function createObstacle() {
+                const containerHeight = gameContainer.clientHeight - 80; // Subtract ground height
+                const gapHeight = 150; // Gap between top and bottom obstacles
+                const minHeight = 50; // Minimum obstacle height
+                const maxHeight = containerHeight - gapHeight - minHeight;
+                const topHeight = Math.floor(Math.random() * (maxHeight - minHeight)) + minHeight;
+                const bottomHeight = containerHeight - topHeight - gapHeight;
+                
+                // Create top obstacle
+                const topObstacle = document.createElement('div');
+                topObstacle.className = 'obstacle obstacle-top';
+                topObstacle.style.height = `${topHeight}px`;
+                topObstacle.style.left = `${gameContainer.clientWidth}px`;
+                gameContainer.appendChild(topObstacle);
+                
+                // Create bottom obstacle
+                const bottomObstacle = document.createElement('div');
+                bottomObstacle.className = 'obstacle obstacle-bottom';
+                bottomObstacle.style.height = `${bottomHeight}px`;
+                bottomObstacle.style.left = `${gameContainer.clientWidth}px`;
+                gameContainer.appendChild(bottomObstacle);
+                
+                // Add obstacles to array
+                obstacles.push({
+                    top: topObstacle,
+                    bottom: bottomObstacle,
+                    passed: false
+                });
+            }
+            
+            function moveObstacles() {
+                for (let i = obstacles.length - 1; i >= 0; i--) {
+                    const obstacle = obstacles[i];
+                    const currentLeft = parseInt(obstacle.top.style.left);
+                    const newLeft = currentLeft - gameSpeed;
+                    
+                    // Move obstacles
+                    obstacle.top.style.left = `${newLeft}px`;
+                    obstacle.bottom.style.left = `${newLeft}px`;
+                    
+                    // Check if bird has passed obstacle
+                    if (!obstacle.passed && newLeft < birdX - 30) {
+                        obstacle.passed = true;
+                        score++;
+                        scoreElement.textContent = score;
+                    }
+                    
+                    // Remove obstacles that are off screen
+                    if (newLeft < -60) {
+                        gameContainer.removeChild(obstacle.top);
+                        gameContainer.removeChild(obstacle.bottom);
+                        obstacles.splice(i, 1);
+                    }
+                }
+            }
+            
+            function createPowerUp() {
+                if (Math.random() > 0.7) return; // 30% chance to create a power-up
+                
+                const containerHeight = gameContainer.clientHeight - 120;
+                const powerUpY = Math.floor(Math.random() * (containerHeight - 100)) + 50;
+                
+                const powerUp = document.createElement('div');
+                powerUp.className = 'power-up';
+                powerUp.style.top = `${powerUpY}px`;
+                powerUp.style.left = `${gameContainer.clientWidth}px`;
+                gameContainer.appendChild(powerUp);
+                
+                powerUps.push(powerUp);
+            }
+            
+            function movePowerUps() {
+                for (let i = powerUps.length - 1; i >= 0; i--) {
+                    const powerUp = powerUps[i];
+                    const currentLeft = parseInt(powerUp.style.left);
+                    const newLeft = currentLeft - gameSpeed;
+                    
+                    // Move power-up
+                    powerUp.style.left = `${newLeft}px`;
+                    
+                    // Check if bird has collected power-up
+                    const powerUpRect = powerUp.getBoundingClientRect();
+                    const birdRect = bird.getBoundingClientRect();
+                    
+                    if (
+                        birdRect.right > powerUpRect.left &&
+                        birdRect.left < powerUpRect.right &&
+                        birdRect.bottom > powerUpRect.top &&
+                        birdRect.top < powerUpRect.bottom
+                    ) {
+                        // Collect power-up
+                        gameContainer.removeChild(powerUp);
+                        powerUps.splice(i, 1);
+                        
+                        // Add bonus points
+                        score += 5;
+                        scoreElement.textContent = score;
+                        
+                        // Vibrate if enabled
+                        if (vibrationEnabled && navigator.vibrate) {
+                            navigator.vibrate(100);
+                        }
+                        
+                        // Show visual effect
+                        const scoreEffect = document.createElement('div');
+                        scoreEffect.textContent = '+5';
+                        scoreEffect.style.position = 'absolute';
+                        scoreEffect.style.left = `${birdRect.left}px`;
+                        scoreEffect.style.top = `${birdRect.top}px`;
+                        scoreEffect.style.color = '#FFD700';
+                        scoreEffect.style.fontWeight = 'bold';
+                        scoreEffect.style.fontSize = '24px';
+                        scoreEffect.style.zIndex = '20';
+                        scoreEffect.style.pointerEvents = 'none';
+                        gameContainer.appendChild(scoreEffect);
+                        
+                        // Animate and remove effect
+                        let opacity = 1;
+                        let top = birdRect.top;
+                        
+                        const animateEffect = () => {
+                            opacity -= 0.05;
+                            top -= 2;
+                            scoreEffect.style.opacity = opacity;
+                            scoreEffect.style.top = `${top}px`;
+                            
+                            if (opacity > 0) {
+                                requestAnimationFrame(animateEffect);
+                            } else {
+                                gameContainer.removeChild(scoreEffect);
+                            }
+                        };
+                        
+                        requestAnimationFrame(animateEffect);
+                    }
+                    
+                    // Remove power-ups that are off screen
+                    if (newLeft < -30) {
+                        gameContainer.removeChild(powerUp);
+                        powerUps.splice(i, 1);
+                    }
+                }
+            }
+            
+            function createInitialClouds() {
+                for (let i = 0; i < 5; i++) {
+                    createCloud(Math.random() * gameContainer.clientWidth);
+                }
+            }
+            
+            function createCloud(initialX) {
+                const cloud = document.createElement('div');
+                cloud.className = 'cloud';
+                const width = Math.floor(Math.random() * 100) + 100;
+                cloud.style.width = `${width}px`;
+                cloud.style.height = `${Math.floor(Math.random() * 50) + 50}px`;
+                cloud.style.top = `${Math.floor(Math.random() * 200)}px`;
+                cloud.style.left = `${initialX}px`;
+                gameContainer.appendChild(cloud);
+                clouds.push(cloud);
+            }
+            
+            function moveClouds() {
+                for (let i = clouds.length - 1; i >= 0; i--) {
+                    const cloud = clouds[i];
+                    const currentLeft = parseInt(cloud.style.left);
+                    const cloudSpeed = gameSpeed * 0.5;
+                    const newLeft = currentLeft - cloudSpeed;
+                    
+                    // Move cloud
+                    cloud.style.left = `${newLeft}px`;
+                    
+                    // Remove clouds that are off screen and create new ones
+                    if (newLeft < -parseInt(cloud.style.width)) {
+                        gameContainer.removeChild(cloud);
+                        clouds.splice(i, 1);
+                        createCloud(gameContainer.clientWidth);
+                    }
+                }
+            }
+            
+            function checkCollisions() {
+                if (!gameRunning) return false;
+                
+                const birdRect = bird.getBoundingClientRect();
+                
+                // Check collision with ground
+                if (birdY >= gameContainer.clientHeight - 80 - bird.offsetHeight) {
+                    return true;
+                }
+                
+                // Check collision with obstacles
+                for (const obstacle of obstacles) {
+                    const topRect = obstacle.top.getBoundingClientRect();
+                    const bottomRect = obstacle.bottom.getBoundingClientRect();
+                    
+                    if (
+                        (birdRect.right > topRect.left &&
+                        birdRect.left < topRect.right &&
+                        birdRect.bottom > topRect.top &&
+                        birdRect.top < topRect.bottom) ||
+                        (birdRect.right > bottomRect.left &&
+                        birdRect.left < bottomRect.right &&
+                        birdRect.bottom > bottomRect.top &&
+                        birdRect.top < bottomRect.bottom)
+                    ) {
+                        return true;
+                    }
+                }
+                
+                return false;
+            }
+            
+            function endGame() {
+                gameRunning = false;
+                gameOver = true;
+                cancelAnimationFrame(gameLoopId);
+                
+                // Update high score if needed
+                if (score > highScore) {
+                    highScore = score;
+                    highScoreElement.textContent = `Meilleur: ${highScore}`;
+                    localStorage.setItem('flappyHighScore', highScore);
+                }
+                
+                // Update game over menu
+                finalScoreElement.textContent = `Score: ${score}`;
+                finalHighScoreElement.textContent = `Meilleur: ${highScore}`;
+                gameOverMenu.style.display = 'flex';
+                pauseBtn.style.display = 'none';
+                
+                // Vibrate if enabled
+                if (vibrationEnabled && navigator.vibrate) {
+                    navigator.vibrate([100, 50, 100]);
+                }
+            }
+            
+            // Prevent default touch behavior to avoid scrolling
+            document.addEventListener('touchmove', function(e) {
+                if (gameRunning) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+            
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                if (!gameRunning) {
+                    updateBirdPosition();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
